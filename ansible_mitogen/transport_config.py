@@ -62,25 +62,21 @@ from __future__ import unicode_literals
 __metaclass__ = type
 
 import abc
+import logging
 import os
+
 import ansible.utils.shlex
 import ansible.constants as C
+import ansible.executor.interpreter_discovery
+import ansible.utils.unsafe_proxy
 
 from ansible.module_utils.six import with_metaclass
 from ansible.module_utils.parsing.convert_bool import boolean
 
-# this was added in Ansible >= 2.8.0; fallback to the default interpreter if necessary
-try:
-    from ansible.executor.interpreter_discovery import discover_interpreter
-except ImportError:
-    discover_interpreter = lambda action,interpreter_name,discovery_mode,task_vars: '/usr/bin/python'
-
-try:
-    from ansible.utils.unsafe_proxy import AnsibleUnsafeText
-except ImportError:
-    from ansible.vars.unsafe_proxy import AnsibleUnsafeText
-
 import mitogen.core
+
+
+LOG = logging.getLogger(__name__)
 
 
 def run_interpreter_discovery_if_necessary(s, task_vars, action, rediscover_python):
@@ -93,12 +89,12 @@ def run_interpreter_discovery_if_necessary(s, task_vars, action, rediscover_pyth
     # keep trying different interpreters until we don't error
     if action._finding_python_interpreter:
         return action._possible_python_interpreter
-    
+
     if s in ['auto', 'auto_legacy', 'auto_silent', 'auto_legacy_silent']:
         # python is the only supported interpreter_name as of Ansible 2.8.8
         interpreter_name = 'python'
         discovered_interpreter_config = u'discovered_interpreter_%s' % interpreter_name
-        
+
         if task_vars.get('ansible_facts') is None:
            task_vars['ansible_facts'] = {}
 
@@ -115,12 +111,13 @@ def run_interpreter_discovery_if_necessary(s, task_vars, action, rediscover_pyth
             action._finding_python_interpreter = True
             # fake pipelining so discover_interpreter can be happy
             action._connection.has_pipelining = True
-            s = AnsibleUnsafeText(discover_interpreter(
+            s = ansible.executor.interpreter_discovery.discover_interpreter(
                 action=action,
                 interpreter_name=interpreter_name,
                 discovery_mode=s,
-                task_vars=task_vars))
-
+                task_vars=task_vars,
+            )
+            s = ansible.utils.unsafe_proxy.AnsibleUnsafeText(s)
             # cache discovered interpreter
             task_vars['ansible_facts'][discovered_interpreter_config] = s
             action._connection.has_pipelining = False
@@ -138,7 +135,7 @@ def run_interpreter_discovery_if_necessary(s, task_vars, action, rediscover_pyth
 def parse_python_path(s, task_vars, action, rediscover_python):
     """
     Given the string set for ansible_python_interpeter, parse it using shell
-    syntax and return an appropriate argument vector. If the value detected is 
+    syntax and return an appropriate argument vector. If the value detected is
     one of interpreter discovery then run that first. Caches python interpreter
     discovery value in `facts_from_task_vars` like how Ansible handles this.
     """
@@ -420,6 +417,13 @@ class PlayContextSpec(Spec):
         # used to run interpreter discovery
         self._action = connection._action
 
+    def _connection_option(self, name):
+        try:
+            return self._connection.get_option(name, hostvars=self._task_vars)
+        except KeyError:
+            LOG.debug('Used PlayContext fallback for option=%r', name)
+            return getattr(self._play_context, name)
+
     def transport(self):
         return self._transport
 
@@ -430,7 +434,7 @@ class PlayContextSpec(Spec):
         return self._play_context.remote_addr
 
     def remote_user(self):
-        return self._play_context.remote_user
+        return self._connection_option('remote_user')
 
     def become(self):
         return self._play_context.become
@@ -457,10 +461,10 @@ class PlayContextSpec(Spec):
         return optional_secret(become_pass)
 
     def password(self):
-        return optional_secret(self._play_context.password)
+        return optional_secret(self._connection_option('password'))
 
     def port(self):
-        return self._play_context.port
+        return self._connection_option('port')
 
     def python_path(self, rediscover_python=False):
         s = self._connection.get_task_var('ansible_python_interpreter')
@@ -686,6 +690,7 @@ class MitogenViaSpec(Spec):
 
     def password(self):
         return optional_secret(
+            self._host_vars.get('ansible_ssh_password') or
             self._host_vars.get('ansible_ssh_pass') or
             self._host_vars.get('ansible_password')
         )

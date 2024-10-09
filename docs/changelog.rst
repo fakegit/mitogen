@@ -18,9 +18,45 @@ To avail of fixes in an unreleased version, please download a ZIP file
 `directly from GitHub <https://github.com/mitogen-hq/mitogen/>`_.
 
 
-Unreleased
-----------
+In progress (unreleased)
+------------------------
 
+
+
+v0.3.13 (2024-10-09)
+--------------------
+
+* :gh:issue:`1138` CI: Complete migration from Azure DevOps Pipelines to
+  GitHub Actions
+* :gh:issue:`1116` :mod:`ansible_mitogen`: Support for templated variable
+  `ansible_ssh_user`.
+* :gh:issue:`978` :mod:`ansible_mitogen`: Support templated Ansible SSH port.
+* :gh:issue:`1073` Python 3.13 support
+
+
+v0.3.12 (2024-10-07)
+--------------------
+
+* :gh:issue:`1106` :mod:`ansible_mitogen`: Support for `ansible_ssh_password`
+  connection variable, and templated SSH connection password.
+* :gh:issue:`1136` tests: Improve Ansible fail_msg formatting.
+* :gh:issue:`1137` tests: Ignore inventory files of inactive tests & benchmarks
+* :gh:issue:`1138` CI: Add re-actors/alls-green GitHub Actions job to simplify
+  branch protections configuration.
+
+
+v0.3.11 (2024-09-30)
+--------------------
+
+* :gh:issue:`1127` :mod:`mitogen`: Consolidate mitogen backward compatibility
+  fallbacks and polyfills into :mod:`mitogen.core`
+* :gh:issue:`1127` :mod:`ansible_mitogen`: Remove backward compatibility
+  fallbacks for Python 2.4 & 2.5.
+* :gh:issue:`1127` :mod:`ansible_mitogen`: Remove fallback imports for Ansible
+  releases before 2.10
+* :gh:issue:`1127` :mod:`ansible_mitogen`: Consolidate Python 2 & 3
+  compatibility
+* :gh:issue:`1128` CI: Start migration from Azure DevOps to GitHub Actions
 
 
 v0.3.10 (2024-09-20)
@@ -92,7 +128,7 @@ v0.3.4 (2023-07-02)
 
 * :gh:issue:`929` Support Ansible 6 and ansible-core 2.13
 * :gh:issue:`832` Fix runtime error when using the ansible.builtin.dnf module multiple times
-* :gh:issue:`925` :class:`ansible_mitogen.connection.Connection` no longer tries to close the 
+* :gh:issue:`925` :class:`ansible_mitogen.connection.Connection` no longer tries to close the
   connection on destruction. This is expected to reduce cases of `mitogen.core.Error: An attempt
   was made to enqueue a message with a Broker that has already exitted`. However it may result in
   resource leaks.
