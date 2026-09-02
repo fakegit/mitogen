@@ -10,11 +10,13 @@
           - out.result | length == 1
           - out.result[0].method == "ssh"
           - out.result[0].kwargs.check_host_keys == "ignore"
-        fail_msg: out={{ out }}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only
 
-- hosts: tc-hkc-unset
+- name: tc-hkc-unset via tc-hkc-host-key-checking
+  hosts: tc-hkc-unset
   vars:
     mitogen_via: tc-hkc-host-key-checking
   tasks:
@@ -27,7 +29,8 @@
           - out.result[0].kwargs.check_host_keys == "enforce"
           - out.result[1].method == "ssh"
           - out.result[1].kwargs.check_host_keys == "ignore"
-        fail_msg: out={{ out }}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only
 
@@ -41,11 +44,13 @@
           - out.result | length == 1
           - out.result[0].method == "ssh"
           - out.result[0].kwargs.check_host_keys == "enforce"
-        fail_msg: out={{ out }}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only
 
-- hosts: tc-hkc-host-key-checking
+- name: tc-hkc-host-key-checking via tc-hkc-unset
+  hosts: tc-hkc-host-key-checking
   vars:
     mitogen_via: tc-hkc-unset
   tasks:
@@ -58,7 +63,8 @@
           - out.result[0].kwargs.check_host_keys == "ignore"
           - out.result[1].method == "ssh"
           - out.result[1].kwargs.check_host_keys == "enforce"
-        fail_msg: out={{ out }}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only
 
@@ -72,11 +78,13 @@
           - out.result | length == 1
           - out.result[0].method == "ssh"
           - out.result[0].kwargs.check_host_keys == "enforce"
-        fail_msg: out={{ out }}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only
 
-- hosts: tc-hkc-ssh-host-key-checking
+- name: tc-hkc-ssh-host-key-checking via tc-hkc-unset
+  hosts: tc-hkc-ssh-host-key-checking
   vars:
     mitogen_via: tc-hkc-unset
   tasks:
@@ -89,6 +97,7 @@
           - out.result[0].kwargs.check_host_keys == "ignore"
           - out.result[1].method == "ssh"
           - out.result[1].kwargs.check_host_keys == "enforce"
-        fail_msg: out={{ out }}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only

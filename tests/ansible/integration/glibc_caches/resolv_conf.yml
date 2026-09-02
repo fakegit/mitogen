@@ -3,11 +3,16 @@
 
 - name: integration/glibc_caches/resolv_conf.yml
   gather_facts: true
+  gather_subset: ["!all", "!min", "python", "virtual"]
   become: true
   hosts: test-targets
   vars:
     ansible_become_pass: has_sudo_pubkey_password
   tasks:
+    - meta: end_play
+      when:
+        - not become_sudo_password_available
+
     - mitogen_test_gethostbyname:
         name: www.google.com
       register: out
@@ -46,7 +51,8 @@
         - out.failed
         - '"Name or service not known" in out.msg or
            "Temporary failure in name resolution" in out.msg'
-        fail_msg: out={{out}}
+        fail_msg: |
+          out={{ out }}
       when:
         - ansible_facts.virtualization_type == "docker"
         - ansible_facts.python.version_info[:2] >= [2, 5]

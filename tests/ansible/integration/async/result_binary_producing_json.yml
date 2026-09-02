@@ -1,16 +1,17 @@
 
 - name: integration/async/result_binary_producing_json.yml
-  gather_facts: true
   hosts: test-targets
+  gather_facts: false
   tasks:
-
+  - platform_facts:
   - block:
     - custom_binary_producing_json_Darwin:
       async: 100
       poll: 0
       register: job_darwin
     - set_fact: job={{job_darwin}}
-    when: ansible_system == "Darwin"
+    when:
+      - ansible_facts.system == "Darwin"
 
   - block:
     - custom_binary_producing_json_Linux:
@@ -18,7 +19,8 @@
       poll: 0
       register: job_linux
     - set_fact: job={{job_linux}}
-    when: ansible_system == "Linux"
+    when:
+      - ansible_facts.system == "Linux"
 
   - assert:
       that: |
@@ -27,13 +29,14 @@
         (job.started == 1) and
         (job.changed == True) and
         (job.finished == 0)
-      fail_msg: job={{job}}
+      fail_msg: |
+        job={{ job }}
 
   - name: busy-poll up to 100000 times
     async_status:
       jid: "{{job.ansible_job_id}}"
     register: result
-    until: result.finished
+    until: result is finished
     retries: 100000
     delay: 0
 
@@ -52,7 +55,8 @@
         - async_out.failed == False
         - async_out.msg == "Hello, world."
         - 'async_out.stderr == "binary_producing_json: oh noes\n"'
-      fail_msg: async_out={{async_out}}
+      fail_msg: |
+        async_out={{ async_out }}
     vars:
       async_out: "{{result.content|b64decode|from_json}}"
   tags:

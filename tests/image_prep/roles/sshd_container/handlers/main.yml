@@ -1,0 +1,4 @@
+- name: Restart sshd
+  command: "true"
+  changed_when: false
+  check_mode: false

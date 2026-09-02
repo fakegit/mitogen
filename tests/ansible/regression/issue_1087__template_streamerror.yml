@@ -17,8 +17,12 @@
         - name: Test template does not cause StreamError
           delegate_to: localhost
           run_once: true
+          vars:
+            ansible_python_interpreter: "{{ ansible_playbook_python }}"
           environment:
+            ANSIBLE_STRATEGY:  "{{ lookup('env', 'ANSIBLE_STRATEGY') | mandatory }}"
             ANSIBLE_VERBOSITY: "{{ ansible_verbosity }}"
+            MITOGEN_LOG_LEVEL: "{{ lookup('env', 'MITOGEN_LOG_LEVEL') }}"
           command:
             cmd: >
               ansible-playbook

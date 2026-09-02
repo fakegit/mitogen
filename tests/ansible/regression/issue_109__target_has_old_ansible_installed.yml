@@ -4,15 +4,18 @@
 - name: regression/issue_109__target_has_old_ansible_installed.yml
   hosts: test-targets
   gather_facts: true
+  gather_subset: ["!all", "!min", "user"]
+  vars:
+    naughty_ansible_dest: "{{ ansible_user_dir }}/ansible.py"
   tasks:
     - meta: end_play
       when:
-        - ansible_version.full is version('2.6', '<', strict=True)
+        - ansible_version_major_minor is version('2.6', '<', strict=True)
 
     - name: Copy the naughty ansible into place
       copy:
-        dest: "{{ansible_user_dir}}/ansible.py"
         src: ansible.py
+        dest: "{{ naughty_ansible_dest }}"
 
     # Restart the connection.
     - meta: reset_connection
@@ -24,11 +27,19 @@
       assert:
         that:
           - env.cwd == ansible_user_dir
-          - (not env.mitogen_loaded) or (env.python_path.count("") == 1)
-        fail_msg: env={{env}}
+          - not env.mitogen_loaded
+            or (env.python_path | select('eq', '') | length == 1)
+        fail_msg: |
+          ansible_user_dir={{ ansible_user_dir }}
+          env={{ env }}
 
     - name: Run some new-style from ansible.module_utils... modules
       stat:
         path: /
+
+    - name: Clean up the naughty ansible
+      file:
+        path: "{{ naughty_ansible_dest }}"
+        state: absent
   tags:
     - issue_109

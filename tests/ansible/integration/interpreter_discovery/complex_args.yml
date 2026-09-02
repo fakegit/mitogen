@@ -4,6 +4,7 @@
 - name: integration/interpreter_discovery/complex_args.yml
   hosts: test-targets
   gather_facts: true
+  gather_subset: ["!all", "!min", "python"]
   environment:
       http_proxy: "{{ lookup('env', 'http_proxy') | default(omit) }}"
       https_proxy: "{{ lookup('env', 'https_proxy') | default(omit) }}"
@@ -14,7 +15,7 @@
     - meta: end_play
       when:
         - not is_mitogen
-        - ansible_version.full is version('2.17.1', '>=', strict=True)
+        - ansible_version_major_minor_patch is version('2.17.1', '>=', strict=True)
 
     - name: create temp file to source
       file:
@@ -52,7 +53,7 @@
           {% if "1" == "1" %}
             {{ special_python }}
           {% else %}
-            python 
+            python
           {% endif %}
   tags:
     - complex_args

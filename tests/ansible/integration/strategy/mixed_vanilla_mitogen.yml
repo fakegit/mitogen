@@ -2,9 +2,15 @@
 - name: integration/strategy/mixed_vanilla_mitogen.yml (linear->mitogen->linear)
   hosts: test-targets[0]
   tasks:
+    - include_tasks: ../_mitogen_only.yml
+
     - connection: local
       environment:
+        ANSIBLE_PYTHON_INTERPRETER: "{{ ansible_playbook_python }}"
         ANSIBLE_VERBOSITY: "{{ ansible_verbosity }}"
+        MITOGEN_LOG_LEVEL: "{{ lookup('env', 'MITOGEN_LOG_LEVEL') }}"
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
       command: |
         ansible-playbook
         {% for inv in ansible_inventory_sources %}
@@ -18,6 +24,9 @@
     - connection: local
       environment:
         ANSIBLE_VERBOSITY: "{{ ansible_verbosity }}"
+        MITOGEN_LOG_LEVEL: "{{ lookup('env', 'MITOGEN_LOG_LEVEL') }}"
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
       command: |
         ansible-playbook
         {% for inv in ansible_inventory_sources %}

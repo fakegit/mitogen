@@ -34,19 +34,16 @@ Construct new children via the OpenSSH client.
 
 import logging
 import re
+import sys
 
-try:
+if sys.version_info >= (3, 3):
     from shlex import quote as shlex_quote
-except ImportError:
+else:
     from pipes import quote as shlex_quote
 
+import mitogen.core
 import mitogen.parent
 from mitogen.core import b
-
-try:
-    any
-except NameError:
-    from mitogen.core import any
 
 
 LOG = logging.getLogger(__name__)

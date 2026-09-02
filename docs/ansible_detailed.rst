@@ -132,14 +132,22 @@ Noteworthy Differences
   | 5               | 3.8 - 3.11      |
   +-----------------+-----------------+
   | 6               |                 |
-  +-----------------+ 3.8 - 3.12      |
+  +-----------------+ 3.8 - 3.13      |
   | 7               |                 |
   +-----------------+-----------------+
-  | 8               | 3.9 - 3.12      |
+  | 8               | 3.9 - 3.13      |
   +-----------------+-----------------+
   | 9               |                 |
-  +-----------------+ 3.10 - 3.12     |
+  +-----------------+ 3.10 - 3.14     |
   | 10              |                 |
+  +-----------------+-----------------+
+  | 11              |                 |
+  +-----------------+ 3.11 - 3.14     |
+  | 12              |                 |
+  +-----------------+-----------------+
+  | 13              |                 |
+  +-----------------+ 3.12 - 3.14     |
+  | 14              |                 |
   +-----------------+-----------------+
 
   Verify your installation is running one of these versions by checking
@@ -306,7 +314,8 @@ container.
     * Intermediary machines cannot use login and become passwords that were
       supplied to Ansible interactively. If an intermediary requires a
       password, it must be supplied via ``ansible_ssh_pass``,
-      ``ansible_password``, or ``ansible_become_pass`` inventory variables.
+      ``ansible_ssh_password``, ``ansible_password``, or
+      ``ansible_become_pass`` inventory variables.
 
     * Automatic tunnelling of SSH-dependent actions, such as the
       ``synchronize`` module, is not yet supported. This will be addressed in a
@@ -534,8 +543,7 @@ interpreter, its location is consistent for each account, and it is always
 privately owned by that account.
 
 During startup, the persistent remote interpreter tries the paths below until
-one is found that is writeable and lives on a filesystem with ``noexec``
-disabled:
+one is found that is writeable:
 
 1. ``$variable`` and tilde-expanded ``remote_tmp`` setting from
    ``ansible.cfg``
@@ -1011,7 +1019,10 @@ Like the :ans:conn:`ssh` except connection delegation is supported.
 * ``ansible_port``, ``ssh_port``
 * ``ansible_ssh_executable``, ``ssh_executable``
 * ``ansible_ssh_private_key_file``
-* ``ansible_ssh_pass``, ``ansible_password`` (default: assume passwordless)
+* ``ansible_ssh_pass``, ``ansible_ssh_password``, ``ansible_password``
+  (default: assume passwordless)
+* ``ansible_ssh_host_key_checking``, ``ansible_host_key_checking`` (default: 
+  :data:`True`)
 * ``ssh_args``, ``ssh_common_args``, ``ssh_extra_args``
 * ``mitogen_mask_remote_name``: if :data:`True`, mask the identity of the
   Ansible controller process on remote machines. To simplify diagnostics,
@@ -1035,9 +1046,27 @@ Debugging
 ---------
 
 Diagnostics and :py:mod:`logging` package output on targets are usually
-discarded. With Mitogen, these are captured and forwarded to the controller
-where they can be viewed with ``-vvv``. Basic high level logs are produced with
-``-vvv``, with logging of all IO on the controller with ``-vvvv`` or higher.
+discarded. Mitogen can capture and forward them to the controller.
+
+Mitogen >= 0.3.45 uses `Ansible verbosity`_ (e.g. ``ansible -vvv ...``) and an
+environment variable ``MITOGEN_LOG_LEVEL`` (e.g. ``MITOGEN_LOG_LEVEL=debug``)
+to configure this. Both are required for more verbose Mitogen logging output.
+
+Ansible verbosity is mapped to Mitogen logging as follows
+
+=================  ===========================================================
+Ansible verbosity  Mitogen output
+=================  ===========================================================
+        0-2        ``ERROR``, ``WARNING``
+         3         ``ERROR``, ``WARNING``, ``INFO``, ``DEBUG`` except IO
+        4-5        ``ERROR``, ``WARNING``, ``INFO``, ``DEBUG`` including IO
+=================  ===========================================================
+
+``MITOGEN_LOG_LEVEL`` accepts a Python `logging level`_ name, or ``IO`` for
+extra ``DEBUG`` output of Mitogen's network traffic.
+
+Mitogen <= 0.3.44 only uses Ansible verbosity to configure the output.
+``MITOGEN_LOG_LEVEL`` is ignored.
 
 While uncaptured standard IO and the logging package on targets is forwarded,
 it is not possible to receive IO activity logs, as the forwarding process would
@@ -1048,6 +1077,9 @@ logging is necessary. File-based logging can be enabled by setting
 ``MITOGEN_ROUTER_DEBUG=1`` in your environment. When file-based logging is
 enabled, one file per context will be created on the local machine and every
 target machine, as ``/tmp/mitogen.<pid>.log``.
+
+.. _ansible verbosity: https://docs.ansible.com/projects/ansible/latest/reference_appendices/config.html#default-verbosity
+.. _logging level: https://docs.python.org/3/library/logging.html#logging-levels
 
 
 Common Problems
@@ -1273,7 +1305,7 @@ on each process whose name begins with ``mitogen:``::
     [pid 29858] futex(0x55ea9be52f60, FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME, 0, NULL, 0xffffffff
     ^C
 
-    $ 
+    $
 
 This shows one thread waiting on IO (``poll``) and two more waiting on the same
 lock. It is taken from a real example of a deadlock due to a forking bug.

@@ -38,9 +38,9 @@ import socket
 import signal
 import sys
 
-try:
+if sys.version_info >= (3, 3):
     import faulthandler
-except ImportError:
+else:
     faulthandler = None
 
 try:
@@ -61,25 +61,20 @@ import mitogen.utils
 import ansible
 import ansible.constants as C
 import ansible.errors
+
+import ansible_mitogen._modifiers
 import ansible_mitogen.logging
 import ansible_mitogen.services
-
-from mitogen.core import b
 import ansible_mitogen.affinity
 
 
 LOG = logging.getLogger(__name__)
 
-ANSIBLE_PKG_OVERRIDE = (
-    u"__version__ = %r\n"
-    u"__author__ = %r\n"
-)
-
 MAX_MESSAGE_SIZE = 4096 * 1048576
 
 worker_model_msg = (
     'Mitogen connection types may only be instantiated when one of the '
-    '"mitogen_*" or "operon_*" strategies are active.'
+    '"mitogen_*" strategies are active.'
 )
 
 shutting_down_msg = (
@@ -186,21 +181,10 @@ def _setup_responder(responder):
     certain packages, and to generate custom responses for certain modules.
     """
     responder.whitelist_prefix('ansible')
+    responder.whitelist_prefix('ansible_collections')
     responder.whitelist_prefix('ansible_mitogen')
 
-    # Ansible 2.3 is compatible with Python 2.4 targets, however
-    # ansible/__init__.py is not. Instead, executor/module_common.py writes
-    # out a 2.4-compatible namespace package for unknown reasons. So we
-    # copy it here.
-    responder.add_source_override(
-        fullname='ansible',
-        path=ansible.__file__,
-        source=(ANSIBLE_PKG_OVERRIDE % (
-            ansible.__version__,
-            ansible.__author__,
-        )).encode(),
-        is_pkg=True,
-    )
+    ansible_mitogen._modifiers.register_moduleresponder_modifiers(responder)
 
 
 def increase_open_file_limit():
@@ -427,7 +411,7 @@ class ClassicWorkerModel(WorkerModel):
 
         common_setup(_init_logging=_init_logging)
 
-        self.parent_sock, self.child_sock = socket.socketpair()
+        self.parent_sock, self.child_sock = mitogen.core.socketpair()
         mitogen.core.set_cloexec(self.parent_sock.fileno())
         mitogen.core.set_cloexec(self.child_sock.fileno())
 
@@ -639,7 +623,7 @@ class MuxProcess(object):
 
         try:
             # Let the parent know our listening socket is ready.
-            mitogen.core.io_op(self.model.child_sock.send, b('1'))
+            mitogen.core.io_op(self.model.child_sock.send, b'1')
             # Block until the socket is closed, which happens on parent exit.
             mitogen.core.io_op(self.model.child_sock.recv, 1)
         finally:

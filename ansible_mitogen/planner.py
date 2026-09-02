@@ -38,6 +38,7 @@ from __future__ import absolute_import, division, print_function
 from __future__ import unicode_literals
 __metaclass__ = type
 
+import inspect
 import json
 import logging
 import os
@@ -50,10 +51,13 @@ import ansible.executor.module_common
 
 import mitogen.core
 import mitogen.select
+import mitogen.service
 
+import ansible_mitogen._modifiers
 import ansible_mitogen.loaders
 import ansible_mitogen.parsing
 import ansible_mitogen.target
+import ansible_mitogen.utils
 import ansible_mitogen.utils.unsafe
 
 
@@ -100,8 +104,7 @@ class Invocation(object):
         #: Initially ``None``, but set by :func:`invoke`. The raw source or
         #: binary contents of the module.
         self._module_source = None
-        #: Initially ``{}``, but set by :func:`invoke`. Optional source to send
-        #: to :func:`propagate_paths_and_modules` to fix Python3.5 relative import errors
+        #: Optional mapping of path -> modified source that should be sent.
         self._overridden_sources = {}
         #: Initially ``set()``, but set by :func:`invoke`. Optional source paths to send
         #: to :func:`propagate_paths_and_modules` to handle loading source dependencies from
@@ -170,6 +173,7 @@ class Planner(object):
         """
         binding = self._inv.connection.get_binding()
 
+        kwargs = ansible_mitogen.utils.unsafe.cast(kwargs)
         new = dict((mitogen.core.UnicodeType(k), kwargs[k])
                    for k in kwargs)
         new.setdefault('good_temp_dir',
@@ -204,7 +208,7 @@ class BinaryPlanner(Planner):
             module=self._inv.module_name,
             path=self._inv.module_path,
             json_args=json.dumps(self._inv.module_args),
-            env=self._inv.env,
+            env=ansible_mitogen.utils.unsafe.cast(self._inv.env),
             **kwargs
         )
 
@@ -341,6 +345,69 @@ class NewStylePlanner(ScriptPlanner):
         'firewalld',  # issue #570: ansible module_utils caches dbus conn
         'ansible.legacy.dnf',  # issue #776
         'ansible.builtin.dnf', # issue #832
+        'dnf5',  # issue #1077; libdnf5 GlobalLogger is a process-global singleton
+        'ansible.legacy.dnf5',
+        'ansible.builtin.dnf5',
+        'freeipa.ansible_freeipa.ipaautomember', # issue #1216
+        'freeipa.ansible_freeipa.ipaautomountkey',
+        'freeipa.ansible_freeipa.ipaautomountlocation',
+        'freeipa.ansible_freeipa.ipaautomountmap',
+        'freeipa.ansible_freeipa.ipacert',
+        'freeipa.ansible_freeipa.ipaclient_api',
+        'freeipa.ansible_freeipa.ipaclient_fix_ca',
+        'freeipa.ansible_freeipa.ipaclient_fstore',
+        'freeipa.ansible_freeipa.ipaclient_get_otp',
+        'freeipa.ansible_freeipa.ipaclient_ipa_conf',
+        'freeipa.ansible_freeipa.ipaclient_join',
+        'freeipa.ansible_freeipa.ipaclient_set_hostname',
+        'freeipa.ansible_freeipa.ipaclient_setup_automount',
+        'freeipa.ansible_freeipa.ipaclient_setup_certmonger',
+        'freeipa.ansible_freeipa.ipaclient_setup_firefox',
+        'freeipa.ansible_freeipa.ipaclient_setup_krb5',
+        'freeipa.ansible_freeipa.ipaclient_setup_nis',
+        'freeipa.ansible_freeipa.ipaclient_setup_nss',
+        'freeipa.ansible_freeipa.ipaclient_setup_ntp',
+        'freeipa.ansible_freeipa.ipaclient_setup_ssh',
+        'freeipa.ansible_freeipa.ipaclient_setup_sshd',
+        'freeipa.ansible_freeipa.ipaclient_temp_krb5',
+        'freeipa.ansible_freeipa.ipaclient_test',
+        'freeipa.ansible_freeipa.ipaclient_test_keytab',
+        'freeipa.ansible_freeipa.ipaconfig',
+        'freeipa.ansible_freeipa.ipadelegation',
+        'freeipa.ansible_freeipa.ipadnsconfig',
+        'freeipa.ansible_freeipa.ipadnsforwardzone',
+        'freeipa.ansible_freeipa.ipadnsrecord',
+        'freeipa.ansible_freeipa.ipadnszone',
+        'freeipa.ansible_freeipa.ipagroup',
+        'freeipa.ansible_freeipa.ipahbacrule',
+        'freeipa.ansible_freeipa.ipahbacsvc',
+        'freeipa.ansible_freeipa.ipahbacsvcgroup',
+        'freeipa.ansible_freeipa.ipahost',
+        'freeipa.ansible_freeipa.ipahostgroup',
+        'freeipa.ansible_freeipa.idoverridegroup',
+        'freeipa.ansible_freeipa.idoverrideuser',
+        'freeipa.ansible_freeipa.idp',
+        'freeipa.ansible_freeipa.idrange',
+        'freeipa.ansible_freeipa.idview',
+        'freeipa.ansible_freeipa.ipalocation',
+        'freeipa.ansible_freeipa.ipanetgroup',
+        'freeipa.ansible_freeipa.ipapermission',
+        'freeipa.ansible_freeipa.ipaprivilege',
+        'freeipa.ansible_freeipa.ipapwpolicy',
+        'freeipa.ansible_freeipa.iparole',
+        'freeipa.ansible_freeipa.ipaselfservice',
+        'freeipa.ansible_freeipa.ipaserver',
+        'freeipa.ansible_freeipa.ipaservice',
+        'freeipa.ansible_freeipa.ipaservicedelegationrule',
+        'freeipa.ansible_freeipa.ipaservicedelegationtarget',
+        'freeipa.ansible_freeipa.ipasudocmd',
+        'freeipa.ansible_freeipa.ipasudocmdgroup',
+        'freeipa.ansible_freeipa.ipasudorule',
+        'freeipa.ansible_freeipa.ipatopologysegment',
+        'freeipa.ansible_freeipa.ipatopologysuffix',
+        'freeipa.ansible_freeipa.ipatrust',
+        'freeipa.ansible_freeipa.ipauser',
+        'freeipa.ansible_freeipa.ipavault',
     ])
 
     def should_fork(self):
@@ -477,7 +544,7 @@ def read_file(path):
     finally:
         os.close(fd)
 
-    return mitogen.core.b('').join(bits)
+    return b''.join(bits)
 
 
 def _propagate_deps(invocation, planner, context):
@@ -505,7 +572,7 @@ def _invoke_async_task(invocation, planner):
         call_recv = context.call_async(
             ansible_mitogen.target.run_module_async,
             job_id=job_id,
-            timeout_secs=invocation.timeout_secs,
+            timeout_secs=ansible_mitogen.utils.unsafe.cast(invocation.timeout_secs),
             started_sender=started_recv.to_sender(),
             kwargs=planner.get_kwargs(),
         )
@@ -553,27 +620,6 @@ def _get_planner(invocation, source):
     raise ansible.errors.AnsibleError(NO_METHOD_MSG + repr(invocation))
 
 
-def _fix_py35(invocation, module_source):
-    """
-    super edge case with a relative import error in Python 3.5.1-3.5.3
-    in Ansible's setup module when using Mitogen
-    https://github.com/dw/mitogen/issues/672#issuecomment-636408833
-    We replace a relative import in the setup module with the actual full file path
-    This works in vanilla Ansible but not in Mitogen otherwise
-    """
-    if invocation.module_name in {'ansible.builtin.setup', 'ansible.legacy.setup', 'setup'} and \
-            invocation.module_path not in invocation._overridden_sources:
-        # in-memory replacement of setup module's relative import
-        # would check for just python3.5 and run this then but we don't know the
-        # target python at this time yet
-        # NOTE: another ansible 2.10-specific fix: `from ..module_utils` used to be `from ...module_utils`
-        module_source = module_source.replace(
-            b"from ..module_utils.basic import AnsibleModule",
-            b"from ansible.module_utils.basic import AnsibleModule"
-        )
-        invocation._overridden_sources[invocation.module_path] = module_source
-
-
 def _load_collections(invocation):
     """
     Special loader that ensures that `ansible_collections` exist as a module path for import
@@ -609,8 +655,17 @@ def invoke(invocation):
         if 'ansible_collections' in invocation.module_path:
             _load_collections(invocation)
 
-        module_source = invocation.get_module_source()
-        _fix_py35(invocation, module_source)
+        pristine = invocation.get_module_source()
+        modified = ansible_mitogen._modifiers.apply_ansible_module_modifiers(
+            invocation.module_name,
+            pristine,
+        )
+        if pristine == modified:
+            module_source = pristine
+        else:
+            module_source = modified
+            invocation._overridden_sources[invocation.module_path] = modified
+
         _planner_by_path[invocation.module_path] = _get_planner(
             invocation,
             module_source

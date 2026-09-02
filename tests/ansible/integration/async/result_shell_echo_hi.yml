@@ -1,10 +1,15 @@
 
 - name: integration/async/result_shell_echo_hi.yml
   gather_facts: true
+  gather_subset: ["!all", "!min", "user"]
   hosts: test-targets
   tasks:
 
   - name: Async shell
+    vars:
+      # Ansible >= 14 (ansible-core >= 2.21) omits the "invocation" key by
+      # default, https://github.com/ansible/ansible/pull/86771
+      ansible_inject_invocation: true
     shell: echo hi; echo there >&2
     async: 100
     poll: 0
@@ -26,6 +31,7 @@
         - async_out.cmd == "echo hi; echo there >&2"
         - 'async_out.delta.startswith("0:00:")'
         - async_out.end.startswith("20")
+        - async_out.invocation is defined
         - async_out.invocation.module_args._raw_params == "echo hi; echo there >&2"
         - async_out.invocation.module_args._uses_shell == True
         - async_out.invocation.module_args.chdir == None
@@ -35,23 +41,25 @@
         # | Ansible <= 3  | ansible-core <= 2.10      | present     | True  |
         # | Ansible 4 - 6 | ansible-core 2.11 - 2.13  | deprecated  | False |
         # | Ansible >= 7  | ansible-core >= 2.14      | absent      | n/a   |
-        - (ansible_version.full is version("2.14", ">=", strict=True) and async_out.invocation.module_args.warn is not defined)
-          or (ansible_version.full is version("2.11", ">=", strict=True) and async_out.invocation.module_args.warn == False)
+        - (ansible_version_major_minor is version("2.14", ">=", strict=True) and async_out.invocation.module_args.warn is not defined)
+          or (ansible_version_major_minor is version("2.11", ">=", strict=True) and async_out.invocation.module_args.warn == False)
           or (async_out.invocation.module_args.warn == True)
         - async_out.rc == 0
         - async_out.start.startswith("20")
         - async_out.stderr == "there"
         - async_out.stdout == "hi"
-      fail_msg: async_out={{async_out}}
+      fail_msg: |
+        async_out={{ async_out }}
     vars:
       async_out: "{{result.content|b64decode|from_json}}"
 
   - assert:
       that:
         - async_out.invocation.module_args.stdin == None
-      fail_msg: async_out={{async_out}}
+      fail_msg: |
+        async_out={{ async_out }}
     when:
-      - ansible_version.full is version('2.4', '>=', strict=True)
+      - ansible_version_major_minor is version('2.4', '>=', strict=True)
     vars:
       async_out: "{{result.content|b64decode|from_json}}"
   tags:

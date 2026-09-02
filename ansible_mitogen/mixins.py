@@ -29,24 +29,18 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
+import json
 import logging
 import os
 import pwd
 import random
 import traceback
 
-try:
-    from shlex import quote as shlex_quote
-except ImportError:
-    from pipes import quote as shlex_quote
-
-from ansible.module_utils._text import to_bytes
-from ansible.parsing.utils.jsonify import jsonify
-
 import ansible
-import ansible.constants
-import ansible.plugins
 import ansible.plugins.action
+import ansible.utils.unsafe_proxy
+import ansible.vars.clean
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 
 import mitogen.core
 import mitogen.select
@@ -56,25 +50,7 @@ import ansible_mitogen.planner
 import ansible_mitogen.target
 import ansible_mitogen.utils
 import ansible_mitogen.utils.unsafe
-
-from ansible.module_utils._text import to_text
-
-try:
-    from ansible.utils.unsafe_proxy import wrap_var
-except ImportError:
-    from ansible.vars.unsafe_proxy import wrap_var
-
-try:
-    # ansible 2.8 moved remove_internal_keys to the clean module
-    from ansible.vars.clean import remove_internal_keys
-except ImportError:
-    try:
-        from ansible.vars.manager import remove_internal_keys
-    except ImportError:
-        # ansible 2.3.3 has remove_internal_keys as a protected func on the action class
-        # we'll fallback to calling self._remove_internal_keys in this case
-        remove_internal_keys = lambda a: "Not found"
-
+from ansible_mitogen.compat.six import shlex_quote
 
 LOG = logging.getLogger(__name__)
 
@@ -125,13 +101,10 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
 
         # required for python interpreter discovery
         connection.templar = self._templar
-        self._finding_python_interpreter = False
-        self._rediscovered_python = False
-        # redeclaring interpreter discovery vars here in case running ansible < 2.8.0
-        self._discovered_interpreter_key = None
-        self._discovered_interpreter = False
-        self._discovery_deprecation_warnings = []
-        self._discovery_warnings = []
+
+        self._mitogen_discovering_interpreter = False
+        self._mitogen_interpreter_candidate = None
+        self._mitogen_rediscovered_interpreter = False
 
     def run(self, tmp=None, task_vars=None):
         """
@@ -244,8 +217,13 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
         Used by the base _execute_module(), and in <2.4 also by the template
         action module, and probably others.
         """
+        if data is None and ansible_mitogen.utils.ansible_version[:2] <= (2, 18):
+            data = '{}'
         if isinstance(data, dict):
-            data = jsonify(data)
+            try:
+                data = json.dumps(data, ensure_ascii=False)
+            except UnicodeDecodeError:
+                data = json.dumps(data)
         if not isinstance(data, bytes):
             data = to_bytes(data, errors='surrogate_or_strict')
 
@@ -316,7 +294,7 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
         if not path.startswith('~'):
             # /home/foo -> /home/foo
             return path
-        if sudoable or not self._play_context.become:
+        if sudoable or not self._connection.become:
             if path == '~':
                 # ~ -> /home/dmw
                 return self._connection.homedir
@@ -393,7 +371,10 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
             self._connection.context = None
 
         self._connection._connect()
-        result = ansible_mitogen.planner.invoke(
+
+        # Ansible <= 13 (ansible-core <= 2.20): dict
+        # Ansible >= 14 (ansible-core >= 2.21): UnifiedTaskResult
+        task_result = ansible_mitogen.planner.invoke(
             ansible_mitogen.planner.Invocation(
                 action=self,
                 connection=self._connection,
@@ -413,57 +394,56 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
             self._remove_tmp_path(tmp)
 
         # prevents things like discovered_interpreter_* or ansible_discovered_interpreter_* from being set
-        # handle ansible 2.3.3 that has remove_internal_keys in a different place
-        check = remove_internal_keys(result)
-        if check == 'Not found':
-            self._remove_internal_keys(result)
+        try:
+            task_result.remove_internal_keys()
+        except AttributeError:
+            ansible.vars.clean.remove_internal_keys(task_result)
 
         # taken from _execute_module of ansible 2.8.6
         # propagate interpreter discovery results back to the controller
         if self._discovered_interpreter_key:
-            if result.get('ansible_facts') is None:
-                result['ansible_facts'] = {}
-
             # only cache discovered_interpreter if we're not running a rediscovery
             # rediscovery happens in places like docker connections that could have different
             # python interpreters than the main host
-            if not self._rediscovered_python:
-                result['ansible_facts'][self._discovered_interpreter_key] = self._discovered_interpreter
+            if not self._mitogen_rediscovered_interpreter:
+                di_key = self._discovered_interpreter_key
+                di_val = self._discovered_interpreter
+                try:
+                    task_result.set_fact(di_key, di_val)
+                except AttributeError:
+                    task_result.setdefault('ansible_facts', {})[di_key] = di_val
 
-        if self._discovery_warnings:
-            if result.get('warnings') is None:
-                result['warnings'] = []
-            result['warnings'].extend(self._discovery_warnings)
+        discovery_warnings = getattr(self, '_discovery_warnings', [])
+        if discovery_warnings:
+            try:
+                task_result._extend_warnings(discovery_warnings)
+            except AttributeError:
+                task_result.setdefault('warnings', []).extend(discovery_warnings)
 
-        if self._discovery_deprecation_warnings:
-            if result.get('deprecations') is None:
-                result['deprecations'] = []
-            result['deprecations'].extend(self._discovery_deprecation_warnings)
+        discovery_deprecation_warnings = getattr(self, '_discovery_deprecation_warnings', [])
+        if discovery_deprecation_warnings:
+            try:
+                task_result._extend_deprecations(discovery_deprecation_warnings)
+            except AttributeError:
+                task_result.setdefault('deprecations', []).extend(discovery_deprecation_warnings)
 
-        return wrap_var(result)
+        if ansible_mitogen.utils.ansible_version[:2] >= (2, 21):
+            task_result = task_result.as_result_dict(for_round_trip=True)
+        return ansible.utils.unsafe_proxy.wrap_var(task_result)
 
     def _postprocess_response(self, result):
-        """
-        Apply fixups mimicking ActionBase._execute_module(); this is copied
-        verbatim from action/__init__.py, the guts of _parse_returned_data are
-        garbage and should be removed or reimplemented once tests exist.
+        if ansible_mitogen.utils.ansible_version[:2] >= (2, 19):
+            data = self._parse_returned_data(result, profile='legacy')
+        else:
+            data = self._parse_returned_data(result)
 
-        :param dict result:
-            Dictionary with format::
-
-                {
-                    "rc": int,
-                    "stdout": "stdout data",
-                    "stderr": "stderr data"
-                }
-        """
-        data = self._parse_returned_data(result)
-
-        # Cutpasted from the base implementation.
-        if 'stdout' in data and 'stdout_lines' not in data:
-            data['stdout_lines'] = (data['stdout'] or u'').splitlines()
-        if 'stderr' in data and 'stderr_lines' not in data:
-            data['stderr_lines'] = (data['stderr'] or u'').splitlines()
+        # ansible-core >= 2.21: done in UnifiedTaskResult.as_result_dict()
+        if ansible_mitogen.utils.ansible_version[:2] <= (2, 20):
+            # Cutpasted from the base implementation.
+            if 'stdout' in data and 'stdout_lines' not in data:
+                data['stdout_lines'] = (data['stdout'] or u'').splitlines()
+            if 'stderr' in data and 'stderr_lines' not in data:
+                data['stderr_lines'] = (data['stderr'] or u'').splitlines()
 
         return data
 
@@ -487,49 +467,36 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
         # calling exec_command until we run into the right python we'll use
         # chicken-and-egg issue, mitogen needs a python to run low_level_execute_command
         # which is required by Ansible's discover_interpreter function
-        if self._finding_python_interpreter:
-            possible_pythons = [
-                '/usr/bin/python',
-                'python3',
-                'python3.7',
-                'python3.6',
-                'python3.5',
-                'python2.7',
-                'python2.6',
-                '/usr/libexec/platform-python',
-                '/usr/bin/python3',
-                'python'
-            ]
+        if self._mitogen_discovering_interpreter:
+            possible_pythons = self._mitogen_interpreter_candidates
         else:
             # not used, just adding a filler value
             possible_pythons = ['python']
 
-        def _run_cmd():
-            return self._connection.exec_command(
-                cmd=cmd,
-                in_data=in_data,
-                sudoable=sudoable,
-                mitogen_chdir=chdir,
-            )
-
         for possible_python in possible_pythons:
             try:
-                self._possible_python_interpreter = possible_python
-                rc, stdout, stderr = _run_cmd()
-            # TODO: what exception is thrown?
-            except:
+                self._mitogen_interpreter_candidate = possible_python
+                rc, stdout, stderr = self._connection.exec_command(
+                    cmd, in_data, sudoable, mitogen_chdir=chdir,
+                )
+            except BaseException as exc:
                 # we've reached the last python attempted and failed
-                # TODO: could use enumerate(), need to check which version of python first had it though
-                if possible_python == 'python':
+                if possible_python == possible_pythons[-1]:
                     raise
                 else:
+                    LOG.debug(
+                        '%r._low_level_execute_command: candidate=%r ignored: %s, %r',
+                        self, possible_python, type(exc), exc,
+                    )
                     continue
 
         stdout_text = to_text(stdout, errors=encoding_errors)
+        stderr_text = to_text(stderr, errors=encoding_errors)
 
         return {
             'rc': rc,
             'stdout': stdout_text,
             'stdout_lines': stdout_text.splitlines(),
-            'stderr': stderr,
+            'stderr': stderr_text,
+            'stderr_lines': stderr_text.splitlines(),
         }

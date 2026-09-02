@@ -1,8 +1,24 @@
+import re
 import sys
 
 sys.path.append('.')
 
-VERSION = '0.3.9'
+
+def changelog_version(path, encoding='utf-8'):
+    "Return the 1st *stable* (not pre, dev) version in the changelog"
+    # See also grep_version() in setup.py
+    # e.g. "0.1.2, (1999-12-31)\n"
+    version_pattern = re.compile(
+        r'^v(?P<version>\d+\.\d+\.\d+) \((?P<date>\d\d\d\d-\d\d-\d\d)\)$',
+        re.MULTILINE,
+    )
+
+    with open(path, encoding=encoding) as f:
+        match = version_pattern.search(f.read())
+        return match.group('version')
+
+
+VERSION = changelog_version('changelog.rst')
 
 author = u'Network Genomics'
 copyright = u'2021, the Mitogen authors'
@@ -51,6 +67,15 @@ domainrefs = {
         'text': '#%s',
         'url': 'https://github.com/mitogen-hq/mitogen/pull/%s',
     },
+    'gh:ansissue': {
+        'text': 'Ansible #%s',
+        'url': 'https://github.com/ansible/ansible/issues/%s',
+    },
+    'gh:anspull': {
+        'text': 'Ansible #%s',
+        'url': 'https://github.com/ansible/ansible/pull/%s',
+    },
+
     'ans:mod': {
         'text': '%s module',
         'url': 'https://docs.ansible.com/ansible/latest/modules/%s_module.html',

@@ -22,6 +22,573 @@ Unreleased
 ----------
 
 
+v0.3.53 (2026-09-02)
+--------------------
+
+* :gh:issue:`1531` :mod:`mitogen`: Python 3.15 support (excluding Ansible)
+* :gh:issue:`970` tests: Remove Django import tests and dependencies
+* :gh:issue:`970` tests: Remove pytest dependencies
+* :gh:issue:`970` tests: Bump test dependencies
+* :gh:issue:`1554` CI: Use GHA ubuntu-24.04 runner & pyenv for Python 2.7 &
+  3.6 tests
+* :gh:issue:`1554` CI: Cache pyenv and pip
+
+
+v0.3.52 (2026-08-25)
+--------------------
+
+* :gh:issue:`1539` :mod:`ansible_mitogen`: Fix "module 'dnf' has no attribute
+  'cli'" on Ansible 14
+* :gh:issue:`1540` :mod:`ansible_mitogen`: Remove override of
+  ``ansible/__init__.py``
+* :gh:issue:`1540` :mod:`ansible_mitogen`: Remove ``reload(sys)`` workaround
+* :gh:issue:`1540` :mod:`ansible_mitogen`: Refactor "fixups" as source modifiers
+* :gh:issue:`1540` :mod:`mitogen`: Add :class:`mitogen.master.ModuleFinder`
+  source modifier feature
+* :gh:issue:`1547` :mod:`mitogen`: Improve validation of ``Context`` attributes
+  attributes during creation and unpickling
+* :gh:issue:`689` :mod:`mitogen`: Bump :attr:`mitogen.core.Context.NAME_MAX_LEN`
+  to 500
+* :gh:issue:`1540` tests: Test :class:`mitogen.master.ModuleFinder` source
+  override
+* :gh:issue:`1545` CI: Avoid creating/installing to Tox environments twice
+* :gh:issue:`1545` CI: Speedup macOS Ansible tests by skipping ``fqdn`` fact
+
+
+v0.3.51 (2026-07-18)
+--------------------
+
+* :gh:issue:`1077` :mod:`ansible_mitogen`: Force-fork the ``dnf5`` module so the
+  ``libdnf5`` ``GlobalLogger`` process-global singleton is not constructed twice in
+  the persistent interpreter
+* :gh:issue:`1545` CI: Increase macOS job timeout from 20 to 30 minutes
+
+Mitogen 0.3.51 (this version) will be the last made via the "stable" Git branch.
+Mitogen 0.3.52 and onward will be released directly from the "master" branch.
+For further details and discussion please see :gh:issue:`1475`.
+
+
+v0.3.50 (2026-06-19)
+--------------------
+
+* :gh:issue:`1529` :mod:`ansible_mitogen`: Use Mitogen context for embedded DNF
+  script with Ansible 14 (ansible-core 2.21)
+* :gh:issue:`1529` :mod:`ansible_mitogen`: Make injected ``__main__`` on target
+  more identifiable/greppable
+* :gh:issue:`1529` :mod:`ansible_mitogen`: Remove
+  :attr:`ansible_mitogen.runner.NewStyleRunner.main_module_name`
+* :gh:issue:`1523` tests: Bump Ansible 14 tests to 14.x
+* :gh:issue:`1529` tests: Cleanup after issue 109 regression test
+* :gh:issue:`1529` tests: Enable issue 776 regression test for recent Ansibles
+
+
+v0.3.49 (2026-06-03)
+--------------------
+
+* :gh:issue:`1523` :mod:`ansible_mitogen`: First Ansible 14 support
+* :gh:issue:`1518` :mod:`mitogen`: Fix sudo authentication when the translated
+  password prompt doesn't contain U+003A COLON
+* :gh:issue:`1523` tests: Split auto, auto_legacy, auto_legacy_silent
+  interpreter discovery tests
+* :gh:issue:`1385` :mod:`ansible_mitogen`: Replace imports of deprecated
+  ``ansible.module_utils.six``
+
+
+v0.3.48 (2026-05-22)
+--------------------
+
+* :gh:issue:`1514` :mod:`mitogen`: Fix sudo authentication with translated
+  password prompt
+* :gh:issue:`1514` :mod:`mitogen`: Handle U+00A0 NO-BREAK SPACE characters seen
+  in some translations of sudo's password prompt
+
+
+v0.3.47 (2026-04-19)
+--------------------
+
+* :gh:issue:`1506` :mod:`mitogen`: Support sudo-rs, used by Ubuntu 26.04
+* :gh:issue:`1509` :mod:`mitogen`: Support sudo and sudo-rs pwfeedback
+* :gh:issue:`1506` tests: Add Ubuntu 26.04 test image
+* :gh:issue:`1506` tests: Test Ubuntu 26.04 targets
+* :gh:issue:`1118` tests: Switch from 2025.02 test images to 2026.04 test images
+* :gh:issue:`1118` tests: sshd ``AllowEnv`` for ``ANSIBLE_*`` and ``MITOGEN_*``
+* :gh:issue:`1317` tests: Send sshd debug output to stderr for container logger
+* :gh:issue:`1118` tests: Give up hiding Mitogen test users from graphical login
+  screens
+* :gh:issue:`1118` tests: Explicitly set mode of ~mitogen__readonly_homedir
+* :gh:issue:`1118` image_prep: Containerize the HTTPS proxy for old repos
+* :gh:issue:`1118` image_prep: Fix Ansible 2.3 <-> Docker container tasks
+* :gh:issue:`1118` image_prep: Workaround password authentication failures in
+  Alama 9 containers due to /etc/shadow and AppArmor interaction
+* :gh:issue:`1118` image_prep: Explicitly specify AMD64 base images
+* :gh:issue:`1118` image_prep: Parameterise sudoers configs
+* :gh:issue:`1506` image_prep: Specify installtion of sudo package per-host
+* :gh:issue:`1118` image_prep: Update repos of archived Debian versions
+* :gh:issue:`849` image_prep: Workaround Python respawn using Ansible apt
+* :gh:issue:`1118` image_prep: Fixup Tox config for the march of time
+
+
+v0.3.46 (2026-04-16)
+--------------------
+
+* :gh:issue:`1502` :mod:`mitogen`: Preserve :py:mod:`logging` config in forked
+  children
+* :gh:issue:`1499` tests: Fix uses of ``testlib.LogCapturer``
+* :gh:issue:`1499` tests: Run Mitogen unittests without
+  ``MITOGEN_LOG_LEVEL=debug``
+* :gh:issue:`1505` CI: Upgrade to GitHub Actions runners that use Node 24
+* :gh:issue:`1498` :mod:`ansible_mitogen`: Allow using temporary directories on
+  filesystems mounted noexec
+
+
+v0.3.45 (2026-03-30)
+--------------------
+
+* :gh:issue:`963` :mod:`ansible_mitogen`: Hide Mitogen debugging by default at
+  high Ansible verbosity
+* :gh:issue:`1485` :mod:`mitogen`: Remove testlib log propagtion manipulation
+  and lingering Operon references
+* :gh:issue:`1482` :mod:`mitogen`: Remove ``mitogen.core._v`` logging shortcut
+* :gh:issue:`1482` :mod:`mitogen`: Remove ``mitogen.core._vv`` logging shortcut
+* :gh:issue:`1482` :mod:`mitogen`: Fix :meth:`mitogen.core.LogHandler.emit`
+  signature
+* :gh:issue:`1490` :mod:`mitogen`: Remove unused ``io`` argument from
+  :func:`mitogen.utils.log_to_file`
+* :gh:issue:`1482` :mod:`mitogen`: Consolidate log levels configuration
+
+
+v0.3.44 (2026-03-15)
+--------------------
+
+* :gh:issue:`1477` :mod:`ansible_mitogen`: Fix cross-task warnings pollution
+
+
+v0.3.43 (2026-03-02)
+--------------------
+
+* :gh:issue:`1462` tests: Consolidate sudoers config into a role
+* :gh:issue:`1464` tests: Profile Ansible plays
+* :gh:issue:`1464` tests: Remove last traces of MODE environment variable
+* :gh:issue:`1464` CI: Remove unused pause_if_interactive()
+* :gh:issue:`1464` CI: Factor out sudoers defaults setup
+* :gh:issue:`1464` CI: Factor out chmod of tests/data/docker/mitogen__has_sudo_pubkey.key
+* :gh:issue:`1464` CI: Unify skipping of container tests
+* :gh:issue:`1464` CI: Factor out setup of localhost ssh keys
+* :gh:issue:`1464` CI: Remove macOS Python 2.x PYTHON_LAUNCHED_FROM_WRAPPER debug
+* :gh:issue:`1464` CI: Factor out setup of localhost ssh and users
+* :gh:issue:`1464` CI: Explicitly pull container images for Ansible tests
+* :gh:issue:`1464` CI: Explicitly create Tox environments
+* :gh:issue:`1464` ci: Replace run_tests with .ci/unit_tests, remove coverage
+  as test requirement
+* :gh:issue:`1455` tests: Fix missing and unused imports of Mitogen
+* :gh:issue:`1455` CI: Remove sys.path manipulation in .ci/unit_tests.py
+* :gh:issue:`1455` tests: Consolidate modules used by tests in tests/testmods
+* :gh:issue:`1466` CI: Remove PYTHONPATH & CWD manipulations from ci_lib
+* :gh:issue:`1466` CI: Allow writing bytecode (.pyc) when running tests
+* :gh:issue:`1310` tests: Add missing ``super()`` calls
+
+
+v0.3.42 (2026-02-20)
+--------------------
+
+* :gh:issue:`1451` :mod:`mitogen`: Refactor module whitelist & blacklist with
+  module overrides and blocks. Improve error messages for denied modules.
+* :gh:issue:`1394` :mod:`ansible_mitogen`, :mod:`mitogen`: Add Incus connection
+  support, allowing users who migrated from LXD to Incus to use ansible-mitogen
+* :gh:issue:`1456` :mod:`ansible_mitogen`: Fix Ansible collections
+  :exc:`!mitogen.core.ModuleDeniedByOverridesError`
+
+
+v0.3.41 (2026-02-10)
+--------------------
+
+* :gh:issue:`1441` :mod:`mitogen`: Consolidate :mod:`pickle` imports and
+  backward compatibility handling.
+* :gh:issue:`126` :mod:`mitogen`: Switch :class:`mitogen.core.Unpickler`
+  to default deny policy when handling :data:`pickle.GLOBAL` opcode.
+* :gh:issue:`1430` :mod:`mitogen`: Pickle top-level ``bytes`` objects
+  ourself on Python 3.x, to avoid ``_codecs.encode()`` call injected by
+  :class:`pickle.Pickler`
+* :gh:issue:`1430` :mod:`mitogen`: Remove caching of result of
+  :meth:`mitogen.core.Message.unpickle`
+* :gh:issue:`1430` :mod:`mitogen`: Allow mutiple pickle streams in a single
+  :class:`mitogen.core.Message`, add :meth:`mitogen.core.Message.unpickle_iter`
+* :gh:issue:`1430` :mod:`mitogen`: Speed up :class:`mitogen.core.ResourceReader`
+  using 2 pickle streams in :data:`mitogen.core.LOAD_RESOURCE` messages
+* :gh:issue:`1430` :mod:`mitogen`: Default to :func:`mitogen.core.find_deny`
+  in :meth:`mitogen.core.Message.unpickle_iter`
+
+
+v0.3.40 (2026-02-04)
+--------------------
+
+* :gh:issue:`946` :mod:`mitogen`: Fix handling of PEP 420 implicit namespace
+  packages, in which ``module.__file__`` can be ``None``
+
+
+v0.3.39 (2026-01-27)
+--------------------
+
+* :gh:issue:`1430` :mod:`mitogen`: Pickle :data:`mitogen.core.GET_RESOURCE`
+  parameters directly as textual strings (rather than ASCII in byte strings)
+* :gh:issue:`1430` :mod:`mitogen`: Explicitly mark messages known to carry
+  pickled data, using :data:`mitogen.core.Message.ENC_PKL`. This repurposes
+  the magic field as a content encoding enumeration.
+* :gh:issue:`1430` :mod:`mitogen`: Add explicit binary Message encoding,
+  marked using :data:`mitogen.core.Message.ENC_BIN`.
+* :gh:issue:`1430` :mod:`mitogen`: Send :class:`mitogen.service.FileService`
+  content raw, without pickle encoding
+
+
+v0.3.38 (2026-01-23)
+--------------------
+
+* :gh:issue:`1418` :mod:`mitogen`: Format :class:`mitogen.core.Message` source
+  and destination as ``<context>:<handle>``, for clarity
+* :gh:issue:`1415` :mod:`mitogen`: Put fallbacks & polyfills into
+  ``if sys.version_info`` blocks
+* :gh:issue:`1423` tests: Group and unify naming of connection benchmarks
+* :gh:issue:`1424` tests: Parameterize connection benchmarks
+* :gh:issue:`1424` tests: Standardise output of connection benchmarks
+* :gh:issue:`1424` tests: Parameterize throughput benchmark
+* :gh:issue:`1424` tests: Parameterize large message benchmark
+* :gh:issue:`1424` :mod:`mitogen`: Consolidate all ``range`` and ``xrange``
+  polyfills into :attr:`mitogen.core.range`
+
+
+v0.3.37 (2026-01-08)
+--------------------
+
+* :gh:issue:`1398` :mod:`mitogen`: Fix :exc:`FileNotFoundError` during
+  ``import requests`` in a Mitogen child
+* :gh:issue:`1403` :mod:`mitogen`: Add initial support for
+  :py:class:`importlib.resource.abc.ResourceReader` protocol
+* :gh:issue:`1407` :mod:`mitogen`: Fix :exc:`AttributeError` in
+  :mod:`mitogen.profiler`
+
+
+v0.3.36 (2025-12-01)
+--------------------
+
+* :gh:issue:`1237` :mod:`mitogen`: Re-declare Python 2.4 compatibility
+* :gh:issue:`1385` :mod:`ansible_mitogen`: Remove a use of
+  ``ansible.module_utils.six``
+* :gh:issue:`1354` docs: Document Ansible 13 (ansible-core 2.20) support
+* :gh:issue:`1354` :mod:`mitogen`: Clarify error message when a module
+  request would be refused by allow or deny listing
+* :gh:issue:`1348` :mod:`mitogen`: Fix hanging process with 100% CPU usage
+
+
+v0.3.35 (2025-12-01)
+--------------------
+
+* :gh:issue:`1132` :mod:`ansible_mitogen` During intrepreter discovery use
+  Ansible ``INTERPRETER_PYTHON_FALLBACK`` config as list of candidates
+
+
+v0.3.34 (2025-11-27)
+--------------------
+
+* :gh:issue:`1118` CI: Use 2025.02 test images, keeping same OS releases
+* :gh:issue:`1358` CI: Bump deprecated macOS 13 runner to macOS 15
+* :gh:issue:`1118` CI: Add OS release coverage: AlmaLinux 9
+* :gh:issue:`1118` CI: Add OS release coverage: CentOS 5
+* :gh:issue:`1118` CI: Add OS release coverage: Debian 12
+* :gh:issue:`1118` CI: Add OS release coverage: Ubuntu 22.04, Ubuntu 24.04
+* :gh:issue:`1124` :mod:`mitogen`: Log why a module is sent or not sent by
+  :class:`mitogen.master.ModuleResponder`
+* :gh:issue:`1124` :mod:`ansible_mitogen`: Speedup startup by not sending
+  ``__main__`` as a related module
+
+
+v0.3.33 (2025-11-22)
+--------------------
+
+* :gh:issue:`1354` :mod:`ansible_mitogen`: ansible_mitogen: Ansible 13
+  (ansible-core 2.20) support
+
+
+v0.3.32 (2025-11-21)
+--------------------
+
+* :gh:issue:`1243` :mod:`mitogen`: Pass first stage, context name, & preamble
+  size as seperate **argv** arguments
+* :gh:issue:`1218` :mod:`ansible_mitogen`: Remove maximum Ansible version check
+* :gh:issue:`1260` CI: Remove integration of retired lgtm.com
+
+
+v0.3.31 (2025-11-05)
+--------------------
+
+* :gh:issue:`1350` :mod:`ansible_mitogen`: Fix regression when loading plugins
+  from ``/custom/path/to/mitogen``
+
+
+v0.3.30 (2025-10-30)
+--------------------
+
+* :gh:issue:`1266` Import cleanups
+* :gh:issue:`1266` :mod:`ansible_mitogen`: De-duplicate sys.path manipulations
+* :gh:issue:`1344` Correct SPDX license declarations
+* :gh:issue:`1344` Declare BSD-3-Clause SPDX license in package metadata
+* :gh:issue:`1344` :mod:`mitogen`: Use :py:func:`logging.makeLogRecord`
+
+
+v0.3.29 (2025-09-18)
+--------------------
+
+* :gh:issue:`1287` Python 3.14 support
+* :gh:issue:`1287` tests: Bump dependencies
+
+
+v0.3.28 (2025-09-17)
+--------------------
+
+* :gh:issue:`1306` :mod:`ansible_mitogen`: Fix non-blocking IO errors in
+  first stage of bootstrap
+* :gh:issue:`1306` CI: Report sudo version on Ansible targets
+* :gh:issue:`1306` CI: Move sudo test users defaults into ``/etc/sudoers.d``
+* :gh:issue:`1306` preamble_size: Fix variability of measured command size
+* :gh:issue:`1306` tests: Count bytes written in ``stdio_test.StdIOTest``
+* :gh:issue:`1306` tests: Check stdio is blocking in sudo contexts
+* :gh:issue:`1327` :mod:`ansible_mitogen`: Add FreeIPA client modules to the
+  always-fork list
+
+
+v0.3.27 (2025-08-20)
+--------------------
+
+* :gh:issue:`1325` :mod:`mitogen`: Refactor
+  ``mitogen.master.scan_code_imports()`` as
+  :func:`mitogen.import.codeobj_imports` and speed-up by 1.5 - 2.5 x
+* :gh:issue:`1329` CI: Refactor and de-duplicate Github Actions workflow
+* :gh:issue:`1315` CI: macOS: Increase failed logins limit of test users
+* :gh:issue:`1325` tests: Improve ``master_test.ScanCodeImportsTest`` coverage
+
+
+v0.3.26 (2025-08-04)
+--------------------
+
+* :gh:issue:`1318` CI: Abbreviate Github Actions job names
+* :gh:issue:`1309` :mod:`ansible_mitogen`: Fix ``become_method: doas``
+* :gh:issue:`712` :mod:`mitogen`: Fix :exc:`BlockingIOError` & ``EAGAIN``
+  errors in subprocesses that write to stdio
+
+
+v0.3.25 (2025-07-29)
+--------------------
+
+Ansible 12 has deprecated third-party strategy plugins. This is currently
+how Mitogen integrates with Ansible (e.g. `ANSIBLE_STRATEGY=mitogen_linear`).
+Running Ansible 12 + Mitogen will currently print a deprecation warning
+
+    [DEPRECATION WARNING]: Use of strategy plugins not included in
+    ansible.builtin are deprecated [...]. This feature will be removed from
+    ansible-core in a future release.
+
+Ansible + Mitogen will still work for now. Mitogen is considering alternatives
+to strategy plugins under :gh:issue:`1278`.
+
+* :gh:issue:`1258` Ansible 12 (ansible-core 2.19) support
+
+
+v0.3.25b1 (2025-07-21)
+----------------------
+
+* :gh:issue:`1303` CI: Switch to archived Debian 10 (buster) apt repository
+
+
+v0.3.25a3 (2025-07-02)
+----------------------
+
+* :gh:issue:`1285` CI: use `result_format = yaml` for Ansible test output,
+  instead of deprecated `stdout_callback = yaml`
+* :gh:issue:`1293` CI: Fix ``ansible_version`` comparisons when an Ansible
+  release candidate is under test
+* :gh:issue:`1275` CI: Test ``ansible_ssh_password`` behaviour without
+  ``sshpass`` installed
+* :gh:issue:`1282` :mod:`ansible_mitogen`: Support ``ANSIBLE_SSH_VERBOSITY``
+  with Ansible 12
+
+
+v0.3.25a2 (2025-06-21)
+----------------------
+
+* :gh:issue:`1274` :mod:`ansible_mitogen`: Replace use of `jsonify()`, which
+  is deprecated form Ansible 12 (ansible-core 2.19)
+
+
+v0.3.25a1 (2025-06-05)
+----------------------
+
+* :gh:issue:`1258` Initial Ansible 12 (ansible-core 2.19) support
+* :gh:issue:`1258` :mod:`ansible_mitogen`: Initial Ansible datatag support
+  (:gh:anspull:`84621`)
+* :gh:issue:`1258` :mod:`ansible_mitogen`: Ansible 12 (ansible-core 2.19) test
+  jobs
+
+
+v0.3.24 (2025-05-29)
+--------------------
+
+* :gh:issue:`1268` :mod:`mitogen` Only close stdin, stdout, and stderr file
+  descriptors (0, 1, and 2) if they were open at process startup.
+
+
+v0.3.23 (2025-04-28)
+--------------------
+
+* :gh:issue:`1121` :mod:`mitogen`: Log skipped :py:mod:`termios` attributes
+* :gh:issue:`1238` packaging: Avoid :py:mod:`ast`, requires Python = 2.6
+* :gh:issue:`1118` CI: Statically specify test usernames and group names
+* :gh:issue:`1118` CI: Don't copy SSH private key to temporary dir
+* :gh:issue:`1118` CI: Don't share temporary directory between test groupings
+* :gh:issue:`1256` CI: Upgrade Github jobs from Ubuntu 20.04 to 22.04 & 24.04
+* :gh:issue:`1263` packaging: Fix InvalidVersion in release versions
+
+
+v0.3.22 (2025-02-04)
+--------------------
+
+* :gh:issue:`1213` tests: Enable default Python warnings
+* :gh:issue:`1111` :mod:`mitogen`: Replace uses of deprecated
+  :py:func:`pkgutil.find_loader`
+* :gh:issue:`1213` :mod:`mitogen`: Fix unclosed file in first stage
+* :gh:issue:`1213` tests: Fix unclosed file in fd_check script
+* :gh:issue:`1213` :mod:`ansible_mitogen`: Don't redeclare Ansible interpreter
+  discovery attributes
+* :gh:issue:`1213` :mod:`ansible_mitogen`: Rename Mitogen interpreter discovery
+  attributes
+* :gh:issue:`1213` :mod:`ansible_mitogen`: Decouple possible_pythons order &
+  error handling
+* :gh:issue:`1213` :mod:`ansible_mitogen`: Return ``stderr_lines`` from
+  ``_low_level_execute_command()``
+* :gh:issue:`1227` tests: Name transport_config tests that use ``mitogen_via``
+* :gh:issue:`1143` :mod:`ansible_mitogen`: Fix dnf module include for dnf.cli
+* :gh:issue:`1234` :mod:`ansible_mitogen`: Fix :exc:`TypeError` in
+  :func:`ansible_mitogen.target.set_file_owner`
+
+
+v0.3.21 (2025-01-20)
+--------------------
+
+* :gh:issue:`1209` docs: Fix Netlify build of website
+* :gh:issue:`1216` :mod:`ansible_mitogen`: Add all ansible_freeipa modules to
+  the always-fork list.
+* :gh:issue:`766` :mod:`ansible_mitogen`: Fix ""could not recover task_vars"
+  and "get_with_context_result object has no attribute _create_control_path"
+  when using ``kubectl``, ``netconf``, or ``network_cli`` connection plugins.
+
+
+v0.3.20 (2025-01-07)
+--------------------
+
+* :gh:issue:`1079` :mod:`ansible_mitogen`: Fix :ans:mod:`wait_for_connection`
+  timeout with templated ``ansible_python_interpreter``
+* :gh:issue:`1079` :mod:`ansible_mitogen`: Fix templated python interpreter
+  with `meta: reset_connection`
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated connection timeout
+  (e.g. ``ansible_timeout``).
+* :gh:issue:`740` :mod:`ansible_mitogen`: Respect ``interpreter_python``
+  in ``ansible.cfg`` and ``ANSIBLE_PYTHON_INTERPRETER`` environment variable.
+
+
+v0.3.19 (2024-12-02)
+--------------------
+
+* :gh:issue:`1129` :mod:`ansible_mitogen`: Ansible 11 support
+
+
+v0.3.18 (2024-11-07)
+--------------------
+
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated become method
+  (e.g. ``ansible_become_method``).
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated become flag
+  (e.g. ``ansible_become_method``, ``become`` keyword).
+
+
+v0.3.17 (2024-11-07)
+--------------------
+
+* :gh:issue:`1182` CI: Fix incorrect world readable/writable file permissions
+  on SSH key ``mitogen__has_sudo_pubkey.key`` during Ansible tests.
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated SSH private key file
+  (e.g. ``ansible_private_key_file``).
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated SSH host key checking
+  (e.g. ``ansible_host_key_checking``, ``ansible_ssh_host_key_checking``).
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated host address
+  (e.g. ``ansible_host``, ``ansible_ssh_host``)
+* :gh:issue:`1184` Test templated SSH host key checking in task vars
+
+
+v0.3.16 (2024-11-05)
+--------------------
+
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated become executable
+  (e.g. ``become_exe``).
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated become executable
+  arguments (e.g. ``become_flags``).
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Templated ssh executable
+  (``ansible_ssh_executable``).
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Fixed templated connection options
+  during a ``meta: reset_connection`` task.
+* :gh:issue:`1129` CI: Migrated macOS 12 runners to macOS 13, due to EOL.
+
+
+v0.3.15 (2024-10-28)
+--------------------
+
+* :gh:issue:`905` :mod:`ansible_mitogen`: Support templated SSH command
+  arguments (e.g. ``ansible_ssh_args``, ``ansible_ssh_extra_args``).
+* :gh:issue:`692` tests: Fix and re-enable several sudo tests
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Support templated become password
+  (e.g. ``ansible_become_pass``, ``ansible_sudo_pass``)
+
+
+v0.3.14 (2024-10-16)
+--------------------
+
+* :gh:issue:`1159` CI: Reduce number of Jobs by parameterizing Mitogen Docker
+  SSH tests
+* :gh:issue:`1083` :mod:`ansible_mitogen`: Support templated become username.
+
+
+v0.3.13 (2024-10-09)
+--------------------
+
+* :gh:issue:`1138` CI: Complete migration from Azure DevOps Pipelines to
+  GitHub Actions
+* :gh:issue:`1116` :mod:`ansible_mitogen`: Support for templated variable
+  `ansible_ssh_user`.
+* :gh:issue:`978` :mod:`ansible_mitogen`: Support templated Ansible SSH port.
+* :gh:issue:`1073` Python 3.13 support
+
+
+v0.3.12 (2024-10-07)
+--------------------
+
+* :gh:issue:`1106` :mod:`ansible_mitogen`: Support for `ansible_ssh_password`
+  connection variable, and templated SSH connection password.
+* :gh:issue:`1136` tests: Improve Ansible fail_msg formatting.
+* :gh:issue:`1137` tests: Ignore inventory files of inactive tests & benchmarks
+* :gh:issue:`1138` CI: Add re-actors/alls-green GitHub Actions job to simplify
+  branch protections configuration.
+
+
+v0.3.11 (2024-09-30)
+--------------------
+
+* :gh:issue:`1127` :mod:`mitogen`: Consolidate mitogen backward compatibility
+  fallbacks and polyfills into :mod:`mitogen.core`
+* :gh:issue:`1127` :mod:`ansible_mitogen`: Remove backward compatibility
+  fallbacks for Python 2.4 & 2.5.
+* :gh:issue:`1127` :mod:`ansible_mitogen`: Remove fallback imports for Ansible
+  releases before 2.10
+* :gh:issue:`1127` :mod:`ansible_mitogen`: Consolidate Python 2 & 3
+  compatibility
+* :gh:issue:`1128` CI: Start migration from Azure DevOps to GitHub Actions
+
 
 v0.3.10 (2024-09-20)
 --------------------
@@ -92,7 +659,7 @@ v0.3.4 (2023-07-02)
 
 * :gh:issue:`929` Support Ansible 6 and ansible-core 2.13
 * :gh:issue:`832` Fix runtime error when using the ansible.builtin.dnf module multiple times
-* :gh:issue:`925` :class:`ansible_mitogen.connection.Connection` no longer tries to close the 
+* :gh:issue:`925` :class:`ansible_mitogen.connection.Connection` no longer tries to close the
   connection on destruction. This is expected to reduce cases of `mitogen.core.Error: An attempt
   was made to enqueue a message with a Broker that has already exitted`. However it may result in
   resource leaks.

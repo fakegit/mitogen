@@ -24,10 +24,12 @@
     - local_action: custom_python_detect_environment
       register: local_env
   tags:
+    - mitogen_only
     - stack_construction
 
 
-- hosts: cd-normal
+- name: stack_construction.yml, cd-normal
+  hosts: cd-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
     - mitogen_get_stack:
@@ -52,9 +54,11 @@
     - stack_construction
 
 
-- hosts: cd-normal
+- name: stack_construction.yml, cd-normal, delegate_to=cd-alias
+  hosts: cd-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
+    - include_tasks: ../_expected_ssh_port.yml
     - mitogen_get_stack:
       delegate_to: cd-alias
       register: out
@@ -72,7 +76,7 @@
                       'keepalive_interval': 30,
                       'keepalive_count': 10,
                       'password': null,
-                      'port': null,
+                      'port': '{{ expected_ssh_port }}',
                       "python_path": ["python3000"],
                       'remote_name': null,
                       'ssh_args': [
@@ -80,10 +84,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'alias-user',
                   },
@@ -95,9 +100,11 @@
     - stack_construction
 
 
-- hosts: cd-alias
+- name: stack_construction.yml, cd-alias
+  hosts: cd-alias
   tasks:
     - include_tasks: ../_mitogen_only.yml
+    - include_tasks: ../_expected_ssh_port.yml
     - mitogen_get_stack:
       register: out
     - assert_equal:
@@ -114,7 +121,7 @@
                       'keepalive_interval': 30,
                       'keepalive_count': 10,
                       'password': null,
-                      'port': null,
+                      'port': '{{ expected_ssh_port }}',
                       "python_path": ["python3000"],
                       'remote_name': null,
                       'ssh_args': [
@@ -122,10 +129,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'alias-user',
                   },
@@ -137,9 +145,11 @@
     - stack_construction
 
 
-- hosts: cd-normal-normal
+- name: stack_construction.yml, cd-normal-normal
+  hosts: cd-normal-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
+    - include_tasks: ../_expected_ssh_port.yml
     - mitogen_get_stack:
       register: out
     - assert_equal:
@@ -167,7 +177,7 @@
                       'keepalive_interval': 30,
                       'keepalive_count': 10,
                       'password': null,
-                      'port': null,
+                      'port': '{{ expected_ssh_port }}',
                       "python_path": ["python3000"],
                       'remote_name': null,
                       'ssh_args': [
@@ -175,10 +185,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'ansible-cfg-remote-user',
                   },
@@ -190,9 +201,11 @@
     - stack_construction
 
 
-- hosts: cd-normal-alias
+- name: stack_construction.yml, cd-normal-alias
+  hosts: cd-normal-alias
   tasks:
     - include_tasks: ../_mitogen_only.yml
+    - include_tasks: ../_expected_ssh_port.yml
     - mitogen_get_stack:
       register: out
     - assert_equal:
@@ -217,10 +230,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'alias-user',
                   },
@@ -237,7 +251,7 @@
                       'keepalive_interval': 30,
                       'keepalive_count': 10,
                       'password': null,
-                      'port': null,
+                      'port': '{{ expected_ssh_port }}',
                       "python_path": ["python3000"],
                       'remote_name': null,
                       'ssh_args': [
@@ -245,10 +259,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'ansible-cfg-remote-user',
                   },
@@ -259,9 +274,11 @@
     - stack_construction
 
 
-- hosts: cd-newuser-normal-normal
+- name: stack_construction.yml, cd-newuser-normal-normal
+  hosts: cd-newuser-normal-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
+    - include_tasks: ../_expected_ssh_port.yml
     - mitogen_get_stack:
       register: out
     - assert_equal:
@@ -289,7 +306,7 @@
                       'keepalive_interval': 30,
                       'keepalive_count': 10,
                       'password': null,
-                      'port': null,
+                      'port': '{{ expected_ssh_port }}',
                       "python_path": ["python3000"],
                       'remote_name': null,
                       'ssh_args': [
@@ -297,10 +314,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'newuser-normal-normal-user',
                   },
@@ -312,9 +330,11 @@
     - stack_construction
 
 
-- hosts: cd-newuser-normal-normal
+- name: stack_construction.yml, cd-newuser-normal-normal, delegate_to=cd-alias
+  hosts: cd-newuser-normal-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
+    - include_tasks: ../_expected_ssh_port.yml
     - mitogen_get_stack:
       delegate_to: cd-alias
       register: out
@@ -332,7 +352,7 @@
                       'keepalive_interval': 30,
                       'keepalive_count': 10,
                       'password': null,
-                      'port': null,
+                      'port': '{{ expected_ssh_port }}',
                       "python_path": ["python3000"],
                       'remote_name': null,
                       'ssh_args': [
@@ -340,10 +360,11 @@
                           -o, ControlPersist=60s,
                           -o, ForwardAgent=yes,
                           -o, HostKeyAlgorithms=+ssh-rsa,
+                          -o, KexAlgorithms=+diffie-hellman-group1-sha1,
                           -o, PubkeyAcceptedKeyTypes=+ssh-rsa,
                           -o, UserKnownHostsFile=/dev/null,
                       ],
-                      'ssh_debug_level': null,
+                      'ssh_debug_level': 0,
                       'ssh_path': 'ssh',
                       'username': 'alias-user',
                   },
@@ -355,7 +376,8 @@
     - stack_construction
 
 
-- hosts: cd-newuser-normal-normal
+- name: stack_construction.yml, cd-newuser-normal-normal, local_action
+  hosts: cd-newuser-normal-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
     - local_action: mitogen_get_stack
@@ -375,7 +397,8 @@
     - stack_construction
 
 
-- hosts: cd-newuser-doas-normal
+- name: stack_construction.yml, cd-newuser-doas-normal
+  hosts: cd-newuser-doas-normal
   tasks:
     - include_tasks: ../_mitogen_only.yml
     - mitogen_get_stack:

@@ -55,7 +55,9 @@ import mitogen.service
 import ansible_mitogen.loaders
 import ansible_mitogen.module_finder
 import ansible_mitogen.target
+import ansible_mitogen.utils
 import ansible_mitogen.utils.unsafe
+from ansible_mitogen.compat.six import reraise
 
 
 LOG = logging.getLogger(__name__)
@@ -64,20 +66,6 @@ LOG = logging.getLogger(__name__)
 # during module import to ensure a single-threaded environment; PluginLoader
 # is not thread-safe.
 ansible_mitogen.loaders.shell_loader.get('sh')
-
-
-if sys.version_info[0] == 3:
-    def reraise(tp, value, tb):
-        if value is None:
-            value = tp()
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
-else:
-    exec(
-        "def reraise(tp, value, tb=None):\n"
-        "    raise tp, value, tb\n"
-     )
 
 
 def _get_candidate_temp_dirs():
@@ -350,7 +338,12 @@ class ContextService(mitogen.service.Service):
         'ansible_mitogen.target',
         'mitogen.fork',
         'mitogen.service',
-    )
+    ) + ((
+        'ansible.module_utils._internal._json._profiles._module_legacy_c2m',
+        'ansible.module_utils._internal._json._profiles._module_legacy_m2c',
+        'ansible.module_utils._internal._json._profiles._module_modern_c2m',
+        'ansible.module_utils._internal._json._profiles._module_legacy_m2c',
+    ) if ansible_mitogen.utils.ansible_version[:2] >= (2, 19) else ())
 
     def _send_module_forwards(self, context):
         if hasattr(self.router.responder, 'forward_modules'):

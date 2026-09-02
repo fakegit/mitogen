@@ -6,6 +6,7 @@
   hosts: test-targets[0]
   connection: local
   vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
     # ControlMaster has the effect of caching the previous auth to the same
     # account, so disable it. Can't disable with ControlMaster no since that
     # already appears on command line, so override ControlPath with junk.
@@ -13,17 +14,17 @@
       -o "ControlPath /tmp/mitogen-ansible-test-{{18446744073709551615|random}}"
 
   tasks:
-    - name: setup ansible_ssh_private_key_file
-      shell: chmod 0600 ../data/docker/mitogen__has_sudo_pubkey.key
-      args:
-        chdir: ../..
+    - include_tasks: ../_mitogen_only.yml
 
     - name: ansible_user, ansible_ssh_private_key_file
       shell: >
         ANSIBLE_ANY_ERRORS_FATAL=false
+        ANSIBLE_CALLBACK_RESULT_FORMAT=json
+        ANSIBLE_LOAD_CALLBACK_PLUGINS=false
         ANSIBLE_STRATEGY=mitogen_linear
-        ANSIBLE_SSH_ARGS="-o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa"
+        ANSIBLE_SSH_ARGS="-o HostKeyAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group1-sha1 -o PubkeyAcceptedKeyTypes=+ssh-rsa"
         ANSIBLE_VERBOSITY="{{ ansible_verbosity }}"
+        MITOGEN_LOG_LEVEL="{{ lookup('env', 'MITOGEN_LOG_LEVEL') }}"
         ansible -m shell -a whoami
         {% for inv in ansible_inventory_sources %}
         -i "{{ inv }}"
@@ -34,13 +35,17 @@
       args:
         chdir: ../..
       register: out
+      changed_when: false
 
     - name: ansible_user, wrong ansible_ssh_private_key_file
       shell: >
         ANSIBLE_ANY_ERRORS_FATAL=false
+        ANSIBLE_CALLBACK_RESULT_FORMAT=json
+        ANSIBLE_LOAD_CALLBACK_PLUGINS=false
         ANSIBLE_STRATEGY=mitogen_linear
-        ANSIBLE_SSH_ARGS="-o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa"
+        ANSIBLE_SSH_ARGS="-o HostKeyAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group1-sha1 -o PubkeyAcceptedKeyTypes=+ssh-rsa"
         ANSIBLE_VERBOSITY="{{ ansible_verbosity }}"
+        MITOGEN_LOG_LEVEL="{{ lookup('env', 'MITOGEN_LOG_LEVEL') }}"
         ansible -m shell -a whoami
         {% for inv in ansible_inventory_sources %}
         -i "{{ inv }}"
@@ -52,11 +57,13 @@
       args:
         chdir: ../..
       register: out
+      changed_when: false
       ignore_errors: true
 
     - assert:
         that:
           - out.rc == 4  # ansible.executor.task_queue_manager.TaskQueueManager.RUN_UNREACHABLE_HOSTS
-        fail_msg: out={{out}}
+        fail_msg: |
+          out={{ out }}
   tags:
     - mitogen_only

@@ -6,8 +6,12 @@
   tasks:
     - name: Test --ask-become-pass
       delegate_to: localhost
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
       environment:
+        ANSIBLE_STRATEGY:  "{{ lookup('env', 'ANSIBLE_STRATEGY') | mandatory }}"
         ANSIBLE_VERBOSITY: "{{ ansible_verbosity }}"
+        MITOGEN_LOG_LEVEL: "{{ lookup('env', 'MITOGEN_LOG_LEVEL') }}"
       expect:
         command: >
           ansible-playbook
@@ -21,3 +25,5 @@
           'BECOME password:': pw_required_password
       changed_when: false
       check_mode: false
+      when:
+        - become_sudo_password_available
